@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Full Screen Leaflet Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        #map {
+            background: black;
+        }
+
+        /* Leaflet crispness override */
+        .leaflet-container .leaflet-overlay-pane svg,
+        .leaflet-container .leaflet-marker-pane img,
+        .leaflet-container .leaflet-shadow-pane img,
+        .leaflet-container .leaflet-tile-pane img,
+        .leaflet-container img.leaflet-image-layer {
+            max-width: none !important;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+    <script>
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", "badge_links.json", false);
+        xhttp.send();
+        var badgeLinks = JSON.parse(xhttp.responseText);
+
+        const crs = L.CRS.Simple;
+        var map = L.map('map', {
+            crs: crs
+        }).setView([-60, 120], 3);
+
+        var mainLayer = L.tileLayer(
+            'http://127.0.0.1:5500/tiles/{z}/{y}/{x}.png', {
+            maxNativeZoom: 6,
+            maxZoom: 10,
+            noWrap: true
+        }).addTo(map);
+
+        var currentTooltip;
+
+        const badgesPerRow = 185;
+        const tileSizeX = 88 / crs.scale(6);
+        const tileSizeY = 31 / crs.scale(6);
+        document.addEventListener("contextmenu", function(event) {
+            event.preventDefault();
+
+            if (currentTooltip) {
+                currentTooltip.remove();
+                currentTooltip = false;
+            }
+
+            latlon = map.mouseEventToLatLng(event);
+            pos = crs.latLngToPoint(latlon, map.zoom);
+
+            var x = Math.floor(pos.x / tileSizeX);
+            var y = Math.floor(pos.y / tileSizeY);
+
+            if (x > badgesPerRow - 1) {
+                return;
+            }
+
+            var ind = x + y * badgesPerRow;
+
+            var links = badgeLinks[ind];
+            if (links.length == 1) {
+                window.open("https://" + links[0], '_blank').focus();
+            } else if (links.length > 1) {
+                var tooltip = L.tooltip({
+                    interactive: true
+                });
+
+                var content = ""
+                for (const link of links) {
+                    content += `<a href="https://${link}" target="_blank">${link}</a><br/>`
+                }
+                tooltip.setContent(content.slice(0, -5));
+                
+                tooltip.setLatLng(latlon);
+                tooltip.addTo(map);
+                currentTooltip = tooltip;
+            }
+        });
+
+        function detectLeftButton(evt) {
+            evt = evt || window.event;
+            if ("buttons" in evt) {
+                return evt.buttons == 1;
+            }
+            var button = evt.which || evt.button;
+            return button == 1;
+        }
+
+        document.addEventListener("mousedown", function(event) {
+            if (!detectLeftButton(event)) { return; }
+
+            window.setTimeout(function () {
+                if (currentTooltip) {
+                    currentTooltip.remove();
+                    currentTooltip = false;
+                }
+            }, 100)
+        });
+    </script>
+</body>
+</html>
