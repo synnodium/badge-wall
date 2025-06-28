@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Full Screen Leaflet Map</title>
+    <title>Badge Wall</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -55,6 +55,7 @@
 
         var mainLayer = L.tileLayer(
             'https://synnodium.github.io/badge-wall/tiles/{z}/{y}/{x}.png', {
+            attribution: 'data taken from <a href="https://eightyeightthirty.one/">eightyeightthirtyone</a>',
             maxNativeZoom: 6,
             maxZoom: 10,
             noWrap: true
